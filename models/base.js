@@ -21,4 +21,35 @@ const sendResponse = (
     resultString,
   });
 };
-module.exports = { isDate, sendResponse };
+const updateTable = (tableName, updateFields, condition) => {
+  let sql = `UPDATE ${tableName} SET `;
+  // 構建 SET 子句
+  Object.keys(updateFields).forEach((key, index) => {
+    if (index === Object.keys(updateFields).length - 1) {
+      sql += `${key} = '${updateFields[key]}'`;
+    } else {
+      sql += `${key} = '${updateFields[key]}', `;
+    }
+  });
+  // 添加 WHERE 子句
+  sql += ` WHERE ${condition}`;
+  return sql;
+};
+const createToTable = (tableName, createFields) => {
+  // INSERT INTO `article` (`id`, `article_no`, `status`, `author`, `title`, `content`, `images`, `credate`, `upddate`) VALUES (NULL, '4', '1', 'A00001', '測試新增文章', '<p><span>開始寫作吧</span></p>', NULL, current_timestamp(), current_timestamp())
+  let sql = `INSERT INTO \`${tableName}\` `;
+  let sqlItem = `(\`id\`, `;
+  let sqlValueItem = `(NULL, `;
+  Object.keys(createFields).forEach((key, index) => {
+    if (index === Object.keys(createFields).length - 1) {
+      sqlItem += `\`${key}\`) VALUES `;
+      sqlValueItem += `'${createFields[key]}')`;
+    } else {
+      sqlItem += `\`${key}\`, `;
+      sqlValueItem += `'${createFields[key]}', `;
+    }
+  });
+  const total_sql = sql + sqlItem + sqlValueItem;
+  return total_sql;
+};
+module.exports = { isDate, sendResponse, updateTable, createToTable };
