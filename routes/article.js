@@ -7,6 +7,7 @@ const {
 const db = require("../db");
 const express = require("express");
 const router = express.Router();
+// 搜尋全部文章
 router.get("/", function (req, res) {
   db.execute(
     `SELECT article.*, account.user_name
@@ -14,20 +15,18 @@ router.get("/", function (req, res) {
   INNER JOIN account ON article.author = account.user_no`
   )
     .then((data) => {
-      const isEmpty = data[0].length === 0;
-      console.log("🚀 ~ /.then ~ data[0]:", data);
-      res.status(isEmpty ? 404 : 200).send({
-        statusCode: isEmpty ? "404" : "200",
-        message: isEmpty ? "FAIL" : "OK",
-        dataList: data[0],
-        result: isEmpty ? false : true,
-        resultString: isEmpty ? "查無資料" : "成功",
-      });
+      if (data[0].length === 0) {
+        sendResponse(res, "404", "FAIL", [], false, "查無資料");
+      } else {
+        sendResponse(res, "200", "OK", data[0], true, "成功");
+      }
     })
     .catch((err) => {
       console.log(`error: ${err}`);
+      sendResponse(res, "500", "FAIL", [], false, "內部錯誤");
     });
 });
+// 搜尋單筆文章
 router.get("/:article_no", function (req, res) {
   db.execute(
     `SELECT article.*, account.user_name
@@ -37,9 +36,7 @@ router.get("/:article_no", function (req, res) {
     [req.params.article_no]
   )
     .then((data) => {
-      const isEmpty = data[0].length === 0;
-      console.log("🚀 ~ /id.then ~ data[0]:", data);
-      if (isEmpty) {
+      if (data[0].length === 0) {
         sendResponse(res, "404", "FAIL", data[0], false, "查無資料");
       } else {
         sendResponse(res, "200", "OK", data[0], true, "成功");
@@ -47,46 +44,10 @@ router.get("/:article_no", function (req, res) {
     })
     .catch((err) => {
       console.log(`error: ${err}`);
+      sendResponse(res, "500", "FAIL", [], false, "內部錯誤");
     });
 });
-// router.post("/updateArticle", (req, res) => {
-//   const data = req.body;
-//   if (!isDate(data.upddate)) {
-//     sendResponse(res, "404", "FAIL", [], false, "日期格式錯誤，請重新輸入");
-//     return;
-//   }
-//   if (isNaN(data.status)) {
-//     sendResponse(res, "404", "FAIL", [], false, "狀態錯誤，請重新輸入");
-//     return;
-//   }
-//   const sql = `UPDATE article SET status = '${data.status}', title = '${data.title}', content = '${data.content}', upddate = '${data.upddate}', images='${data.images}' WHERE article.article_no='${data.article_no}'`;
-//   const articleNo = data.article_no;
-//   db.execute(sql)
-//     .then((data) => {
-//       if (data[0].affectedRows === 0) {
-//         sendResponse(res, "404", "FAIL", [], false, "修改失敗");
-//       } else {
-//         db.execute(`SELECT * FROM article WHERE article_no = '${articleNo}'`)
-//           .then((result) => {
-//             const resultObject = result[0];
-//             console.log("🚀 ~ .then ~ resultObject:", resultObject);
-//             const isEmpty = result[0].length === 0;
-//             if (isEmpty) {
-//               sendResponse(res, "404", "FAIL", resultObject, false, "查無資料");
-//             } else {
-//               sendResponse(res, "200", "OK", resultObject, true, "修改成功");
-//             }
-//           })
-//           .catch((err) => {
-//             console.log(`inner error: ${err}`);
-//           });
-//       }
-//     })
-//     .catch((err) => {
-//       console.log(`error: ${err}`);
-//       sendResponse(res, "500", "FAIL", resultObject, false, "內部錯誤");
-//     });
-// });
+// 更新單筆文章
 router.post("/updateArticle", (req, res) => {
   const data = req.body;
   if (data.upddate && !isDate(data.upddate)) {
@@ -107,7 +68,7 @@ router.post("/updateArticle", (req, res) => {
       updateFields[key] = data[key];
     }
   });
-  // 如果沒有提供任何要更新的欄位，回傳錯誤訊息
+  // 如果沒有提供任何要更新的欄位，回傳訊息
   if (Object.keys(updateFields).length === 0) {
     sendResponse(res, "200", "OK", [], true, "沒有更新文章內容");
     return;
@@ -135,6 +96,7 @@ router.post("/updateArticle", (req, res) => {
           })
           .catch((err) => {
             console.log(`inner error: ${err}`);
+            sendResponse(res, "500", "FAIL", [], false, "內部錯誤");
           });
       }
     })
@@ -143,7 +105,7 @@ router.post("/updateArticle", (req, res) => {
       sendResponse(res, "500", "FAIL", [], false, "內部錯誤");
     });
 });
-
+// 新增單筆文章
 router.post("/createArticle", (req, res) => {
   let newNo;
   const data = req.body;
